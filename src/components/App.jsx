@@ -1,92 +1,107 @@
-import React, { Component } from "react";
-import axios from "axios";
-import Searchbar from "./Searchbar/Searchbar";
-import { ToastContainer, toast } from 'react-toastify';
-import { ImageGallery } from "./ImageGallery/ImageGallery";
-import LoadMoreBtn from "./Button/LoadMoreBtn";
-import LoaderImg from "./Loader/Loader";
-import Modal from "./Modal/Modal";
+import React, { Component } from 'react';
+import * as API from './API';
+import Searchbar from './Searchbar/Searchbar';
+import { ToastContainer } from 'react-toastify';
+import { ImageGallery } from './ImageGallery/ImageGallery';
+import LoadMoreBtn from './Button/LoadMoreBtn';
+import LoaderImg from './Loader/Loader';
+import Modal from './Modal/Modal';
 
-
-axios.defaults.baseURL = 'https://pixabay.com/api';
-
-class App extends Component {
-
+export class App extends Component {
   state = {
-    searchItem: '',
-    items: [],
     page: 1,
-    showModal: false,
-    imageModal: null,
-  }
+    query: '',
+    images: [],
+    error: '',
+    isLoading: false,
+    isShowModal: false,
+    largeImageURL: '',
+    tags: '',
+    totalImages: 0,
+  };
 
-  async componentDidUpdate(prevProps, prevState) {
-    const prevSearch = prevState.searchItem;
-    const newSearch = this.state.searchItem;
-    const prevPage = prevState.page;
-    const newPage = this.state.page;
+  async componentDidUpdate(_, prevState) {
+    const { query, page } = this.state;
 
-    if (prevSearch !== newSearch || prevPage !== newPage) {
-      this.setState({ status: 'pending' });
-      if (prevSearch !== newSearch)  {
-            this.setState({page: 1})
+    if (
+      prevState.page !== this.state.page ||
+      prevState.query !== this.state.query
+    ) {
+      this.setState({ isLoading: true });
+      API.fetchImages(query, page)
+        .then(({ hits, totalHits }) => {
+          if (hits.length) {
+            return this.setState(prev => ({
+              images: [...prev.images, ...hits],
+              totalImages: totalHits,
+            }));
           }
-  
-      try {
-        const response = await axios.get(`/?q=${newSearch}&page=${newPage}&key=31315940-fbb1061bb3bfe12c6324aab94&image_type=photo&orientation=horizontal&per_page=12`);
-        
-        const currentItems = response.data.hits.map(({ id, webformatURL, largeImageURL, tags }) => {
-          return { id, webformatURL, largeImageURL, tags };
+          this.setState(prevState => ({
+            page: prevState.page + 1,
+          }));
+        })
+        .catch(error => this.setState({ error }))
+        .finally(() => {
+          this.setState({ isLoading: false });
         });
-        this.setState((prevState) => ({
-          items: [...prevState.items, ...currentItems], status: 'resolved',
-        }));
-        if (response.data.hits.length === 0) {
-          toast.error('Sorry, maybe next time!', { position: "top-center", });
-        }
-      } catch (error) {
-        toast.error('Sorry, so sorry!', { position: "top-center", });
-        this.setState({ status: 'rejected' });
-      }
-    };
-  }; 
-
-  handleFormSubmit = searchItem => {
-    this.setState({ searchItem, items: [] });
+    }
   }
 
-  ClickLoadBtn = () => {
-    this.setState((prevState) => ({
+  loadMore = e => {
+    e.preventDefault();
+    this.setState(prevState => ({
       page: prevState.page + 1,
     }));
   };
 
-  toggleModal = largeImageURL => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
-    this.setState({ imageModal: largeImageURL });
+  onSearch = query => {
+    this.setState({
+      query,
+      images: [],
+      page: 1,
+    });
   };
 
+  onClick = largeImageURL => {
+    this.setState({ largeImageURL });
+    this.toggleModal();
+  };
+
+  toggleModal = () => {
+    this.setState(({ isShowModal }) => ({
+      isShowModal: !isShowModal,
+    }));
+  };
+
+  ifLoadMore = () => {
+    return this.state.totalImages - this.state.images.length > 12;
+  };
 
   render() {
-    const { items, status, showModal, imageModal} = this.state;
-
+    const { isLoading, images, isShowModal, largeImageURL, tags, error } =
+      this.state;
     return (
-    <>
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        {items.length > 0 && <ImageGallery pictures={items} onClick={this.toggleModal} />}
-        {status === 'pending' && <LoaderImg />}
-        {(items.length === 12 || items.length > 12) && <LoadMoreBtn onClick={this.ClickLoadBtn} />}
-        {showModal && (
+      <>
+        <Searchbar onSubmit={this.onSearch} />
+        {images.length !== 0 && (
+          <>
+            <ImageGallery onClick={this.onClick} images={images} />
+            {this.ifLoadMore() && !isLoading && (
+              <LoadMoreBtn onClick={this.loadMore} />
+            )}
+          </>
+        )}
+        {isLoading && <LoaderImg />}
+
+        {error && <h1>Sorry, so sorry! {tags}.</h1>}
+        {isShowModal && (
           <Modal onClose={this.toggleModal}>
-            <img src={imageModal} alt="" />
+            <img src={largeImageURL} alt={tags} />
           </Modal>
         )}
         <ToastContainer autoClose={2000} />
-    </>
-  );
+      </>
+    );
   }
-};
-
+}
 export default App;

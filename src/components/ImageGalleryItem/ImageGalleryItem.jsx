@@ -1,15 +1,17 @@
-import {ImageGalleryFoto, ImageGallery} from './ImageGalleryItem.styled.jsx'
+import { ImageGalleryFoto, ImageGallery } from './ImageGalleryItem.styled.jsx';
 import PropTypes from 'prop-types';
 
-const ImageGalleryItem = ({ webformatURL, largeImageURL, tags, id, largeImage  }) => {
-    
+const ImageGalleryItem = ({
+  webformatURL,
+  largeImageURL,
+  tags,
+  id,
+  largeImage,
+}) => {
   return (
-      <ImageGalleryFoto key={id} onClick={() => largeImage(largeImageURL)}>
-          <ImageGallery src={webformatURL}
-              alt={tags}
-              
-          />
-      </ImageGalleryFoto>
+    <ImageGalleryFoto key={id} onClick={() => largeImage(largeImageURL)}>
+      <ImageGallery src={webformatURL} alt={tags} />
+    </ImageGalleryFoto>
   );
 };
 
