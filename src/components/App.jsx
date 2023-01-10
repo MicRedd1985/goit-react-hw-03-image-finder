@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import * as API from './API';
+import * as API from '../API/API';
 import Searchbar from './Searchbar/Searchbar';
 import { ToastContainer } from 'react-toastify';
 import { ImageGallery } from './ImageGallery/ImageGallery';
